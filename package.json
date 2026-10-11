@@ -1,0 +1,8 @@
+{
+  "name": "cookbook",
+  "private": true,
+  "description": "A personal cookbook for recipes written by Claude.",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}

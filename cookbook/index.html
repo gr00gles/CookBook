@@ -1,0 +1,1390 @@
+<title>CookBook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&family=Zilla+Slab:wght@500;600;700&display=swap">
+<style>
+/* Layout: a recipe box. The library is a desk of index cards; a recipe opens as one big
+   ruled card with a red header line, typed amounts and highlighter on the quantities. */
+:root {
+  --desk: #E5EAEE;
+  --card: #FFFFFF;
+  --edge: #D0D9E2;
+  --ink: #1C2630;
+  --ink-soft: #566472;
+  --rule: #C8D8EA;
+  --red: #CC3A3A;
+  --accent: #21529A;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E1EAF7;
+  --hl: #FBE58A;
+  --hl-ink: #3A2E00;
+  --done: #8A97A3;
+  --shadow: 0 1px 0 rgba(28, 38, 48, .05), 0 8px 20px -14px rgba(28, 38, 48, .45);
+
+  --font-display: "Zilla Slab", "Roboto Slab", Rockwell, Georgia, serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-type: "Courier Prime", "Courier New", ui-monospace, Menlo, monospace;
+
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.0625rem;
+  --step-2: 1.3125rem;
+  --step-3: 1.75rem;
+  --step-4: 2.25rem;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #10151A;
+    --card: #19212A;
+    --edge: #2A3540;
+    --ink: #E3E8ED;
+    --ink-soft: #9AA6B2;
+    --rule: #2A3A4C;
+    --red: #E36F6F;
+    --accent: #8EB3EF;
+    --accent-ink: #0C1420;
+    --accent-soft: #1D2B3E;
+    --hl: #4C4216;
+    --hl-ink: #FFF1B5;
+    --done: #6C7884;
+    --shadow: 0 1px 0 rgba(0, 0, 0, .35), 0 10px 22px -14px rgba(0, 0, 0, .8);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #10151A;
+  --card: #19212A;
+  --edge: #2A3540;
+  --ink: #E3E8ED;
+  --ink-soft: #9AA6B2;
+  --rule: #2A3A4C;
+  --red: #E36F6F;
+  --accent: #8EB3EF;
+  --accent-ink: #0C1420;
+  --accent-soft: #1D2B3E;
+  --hl: #4C4216;
+  --hl-ink: #FFF1B5;
+  --done: #6C7884;
+  --shadow: 0 1px 0 rgba(0, 0, 0, .35), 0 10px 22px -14px rgba(0, 0, 0, .8);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--desk);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  padding-inline: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 1120px; margin-inline: auto; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: var(--desk);
+  border-bottom: 1px solid var(--edge);
+  margin-inline: -16px;
+  padding: 10px 16px;
+}
+.topbar .wrap { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--step-2);
+  letter-spacing: .01em;
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: 0; padding: 0; cursor: pointer;
+}
+.brand-mark {
+  width: 26px; height: 20px; border-radius: 3px;
+  background:
+    linear-gradient(var(--red), var(--red)) 0 6px / 100% 2px no-repeat,
+    repeating-linear-gradient(to bottom, transparent 0 11px, var(--rule) 11px 12px) 0 2px / 100% 100% no-repeat,
+    var(--card);
+  border: 1px solid var(--edge);
+}
+.status {
+  margin-left: auto;
+  font-family: var(--font-type);
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--done); }
+.status[data-mode="cloud"]::before { background: #2E9B5F; }
+.status[data-mode="local"]::before { background: #D19A1E; }
+
+/* ---------- buttons, chips, fields ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 8px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--edge);
+  background: var(--card);
+  font-weight: 700; font-size: 0.9375rem;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.quiet { background: transparent; border-color: transparent; }
+.btn.quiet:hover { background: var(--accent-soft); }
+.btn.danger { color: var(--red); }
+.btn.danger.solid { background: var(--red); border-color: var(--red); color: var(--card); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; filter: none; }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.btn .star { font-size: 1.1em; line-height: 1; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid var(--edge); background: var(--card);
+  border-radius: 999px; padding: 6px 12px; min-height: 36px;
+  font-size: 0.875rem; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.chip .n { font-family: var(--font-type); color: var(--ink-soft); font-size: var(--step--1); }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.chip[aria-pressed="true"] .n { color: inherit; }
+
+.field { display: grid; gap: 6px; }
+.field > span { font-weight: 700; font-size: 0.875rem; }
+.field small { color: var(--ink-soft); font-size: var(--step--1); }
+.input, .textarea, select.input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 10px 12px;
+}
+.input:focus, .textarea:focus { outline: 3px solid var(--accent-soft); border-color: var(--accent); }
+.textarea { font-family: var(--font-type); font-size: 0.9375rem; line-height: 1.55; resize: vertical; min-height: 280px; }
+
+/* ---------- library ---------- */
+.library { display: grid; gap: 20px; padding-block: 24px 48px; }
+.shelf-head { display: grid; gap: 14px; }
+.shelf-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.shelf-title h1 { font-size: var(--step-4); font-weight: 700; }
+.shelf-title .count { font-family: var(--font-type); color: var(--ink-soft); }
+.shelf-title .btn { margin-left: auto; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; }
+.filters .search { flex: 1 1 240px; min-width: 0; }
+.filters select { flex: 0 0 auto; width: auto; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.card {
+  position: relative;
+  display: grid;
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card-title {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--step-2);
+  line-height: 1.2;
+  padding: 16px 40px 10px 16px;
+  border-bottom: 2px solid var(--red);
+  text-wrap: balance;
+}
+.card-star { position: absolute; top: 14px; right: 14px; color: var(--red); font-size: 1.1rem; }
+.card-body {
+  display: block;
+  padding: 0 16px 0;
+  line-height: 28px;
+  font-size: 0.9375rem;
+  background: repeating-linear-gradient(to bottom, transparent 0 27px, var(--rule) 27px 28px);
+}
+.card-desc {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; color: var(--ink-soft);
+}
+.card-meta { display: block; font-family: var(--font-type); font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-tags { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--accent); font-size: 0.875rem; }
+
+.empty {
+  border: 1px solid var(--edge); border-radius: var(--radius); background: var(--card);
+  box-shadow: var(--shadow); max-width: 720px;
+}
+.empty-head { padding: 20px 20px 12px; border-bottom: 2px solid var(--red); display: grid; gap: 6px; }
+.empty-head h2 { font-size: var(--step-3); }
+.empty-head p { color: var(--ink-soft); }
+.howto-steps { list-style: none; margin: 0; padding: 0 20px; counter-reset: how; }
+.howto-steps li {
+  counter-increment: how;
+  display: grid; grid-template-columns: 2.25rem 1fr; gap: 8px;
+  padding: 14px 0; border-bottom: 1px solid var(--rule);
+}
+.howto-steps li::before { content: counter(how); font-family: var(--font-type); font-weight: 700; color: var(--red); font-size: var(--step-2); line-height: 1.2; }
+.howto-steps li:last-child { border-bottom: 0; }
+.howto-steps strong { display: block; }
+.empty-actions { padding: 4px 20px 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+.prompt-box { display: grid; gap: 10px; }
+.prompt-text {
+  margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
+  font-family: var(--font-type); font-size: 0.875rem; line-height: 1.55;
+  background: var(--desk); border: 1px dashed var(--edge); border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.howto { border-top: 1px solid var(--edge); padding-top: 16px; max-width: 760px; }
+.howto summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.howto .prompt-box { padding-top: 8px; }
+.muted { color: var(--ink-soft); }
+.notice { padding: 16px; border: 1px dashed var(--edge); border-radius: var(--radius); color: var(--ink-soft); display: grid; gap: 10px; justify-items: start; }
+
+/* ---------- recipe ---------- */
+.recipe-page { padding-block: 20px 56px; }
+.recipe {
+  background: var(--card); border: 1px solid var(--edge); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.recipe-head { padding: 24px 24px 18px; border-bottom: 4px double var(--red); display: grid; gap: 12px; }
+.recipe-head h1 { font-size: clamp(1.875rem, 1.3rem + 2.4vw, 2.75rem); font-weight: 700; }
+.recipe-head .desc { color: var(--ink-soft); font-size: var(--step-1); max-width: 65ch; white-space: pre-line; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 0; font-family: var(--font-type); }
+.facts div { display: flex; gap: 8px; align-items: baseline; }
+.facts dt { text-transform: uppercase; letter-spacing: .08em; font-size: 0.75rem; color: var(--ink-soft); }
+.facts dd { margin: 0; font-weight: 700; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 0.8125rem; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 10px; }
+.recipe-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--red); border-radius: var(--radius); }
+.confirm p { flex: 1 1 200px; font-weight: 700; }
+
+.cookbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  padding: 12px 24px; border-bottom: 1px solid var(--rule); background: var(--card);
+}
+.scaler { display: inline-flex; align-items: center; border: 1px solid var(--edge); border-radius: var(--radius); overflow: hidden; }
+.scaler button { width: 44px; height: 44px; border: 0; background: transparent; font-size: 1.25rem; font-weight: 700; cursor: pointer; }
+.scaler button:hover { background: var(--accent-soft); }
+.scaler output { min-width: 8.5rem; text-align: center; font-family: var(--font-type); font-weight: 700; padding-inline: 6px; border-inline: 1px solid var(--edge); line-height: 44px; }
+.scaler output small { font-weight: 400; color: var(--ink-soft); }
+.cookbar .spacer { flex: 1 1 auto; }
+
+.recipe-body { display: grid; grid-template-columns: minmax(0, 1fr); }
+.recipe-body > section { padding: 20px 24px 24px; min-width: 0; }
+.recipe-body h2 {
+  font-size: var(--step-2); font-weight: 600;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+}
+.recipe-body h2 .n { font-family: var(--font-type); font-size: var(--step--1); font-weight: 400; color: var(--ink-soft); }
+.group {
+  font-family: var(--font-body); font-size: 0.8125rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--red);
+  padding: 16px 0 6px; border-bottom: 1px solid var(--rule);
+}
+.ing-list, .step-list, .note-list { list-style: none; margin: 0; padding: 0; }
+.ing-list li { border-bottom: 1px solid var(--rule); }
+.ing { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; padding: 10px 0; cursor: pointer; font-size: var(--step-1); }
+.ing input { width: 20px; height: 20px; margin: 3px 0 0; accent-color: var(--accent); cursor: pointer; }
+.ing.is-done span { color: var(--done); text-decoration: line-through; text-decoration-thickness: 1px; }
+.amt-i { font-family: var(--font-type); font-weight: 700; }
+.step-list li { border-bottom: 1px solid var(--rule); }
+.step {
+  display: grid; grid-template-columns: 2.25rem 1fr; gap: 10px;
+  width: 100%; text-align: left; padding: 14px 0; background: none; border: 0; cursor: pointer;
+  font-size: var(--step-1); line-height: 1.6;
+}
+.step-num { font-family: var(--font-type); font-weight: 700; color: var(--red); font-size: var(--step-2); line-height: 1.3; }
+.is-done .step-text { color: var(--done); }
+.is-done .step-num { color: var(--done); }
+.is-done mark.amt { background: transparent; color: inherit; }
+mark.amt {
+  background: var(--hl); color: var(--hl-ink); font-weight: 700;
+  padding: 0 .18em; border-radius: 2px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.amt.changed { text-decoration: underline dotted; text-underline-offset: 3px; }
+
+.extras { border-top: 1px solid var(--rule); display: grid; grid-template-columns: minmax(0, 1fr); }
+.extras > section { padding: 20px 24px 24px; min-width: 0; display: grid; gap: 10px; align-content: start; }
+.extras h2 { font-size: var(--step-2); font-weight: 600; }
+.note-list li { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.note-group + .note-group { margin-top: 12px; }
+.my-notes .textarea { min-height: 140px; font-family: var(--font-body); font-size: var(--step-0); }
+.my-notes .saved { font-family: var(--font-type); font-size: var(--step--1); color: var(--ink-soft); min-height: 1.2em; }
+.copy-fallback { display: grid; gap: 8px; }
+
+@media (min-width: 820px) {
+  .recipe-body { grid-template-columns: minmax(260px, 2fr) minmax(0, 3fr); }
+  .recipe-body > .ingredients { border-right: 1px solid var(--rule); }
+  .recipe-body > .ingredients > .sticky { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 80px); }
+  .extras { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+  .extras > section + section { border-left: 1px solid var(--rule); }
+}
+
+/* ---------- editor ---------- */
+.editor { display: grid; gap: 20px; padding-block: 20px 56px; }
+.editor-head { display: grid; gap: 6px; }
+.editor-head h1 { font-size: var(--step-4); font-weight: 700; }
+.editor-head p { color: var(--ink-soft); max-width: 62ch; }
+.editor-grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.editor-form { display: grid; gap: 16px; min-width: 0; }
+.editor-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.editor-actions .why { color: var(--ink-soft); font-size: 0.875rem; }
+.preview {
+  background: var(--card); border: 1px solid var(--edge); border-radius: var(--radius);
+  box-shadow: var(--shadow); min-width: 0; overflow: hidden;
+}
+.preview-label { font-family: var(--font-type); font-size: 0.75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); padding: 12px 16px 0; }
+.preview-head { padding: 6px 16px 12px; border-bottom: 2px solid var(--red); display: grid; gap: 8px; }
+.preview-head h2 { font-size: var(--step-3); }
+.preview-head h2.missing { color: var(--ink-soft); font-style: italic; font-weight: 500; }
+.preview-stats { font-family: var(--font-type); font-size: 0.875rem; }
+.preview-body { padding: 8px 16px 16px; display: grid; gap: 4px; }
+.preview-body h3 { font-family: var(--font-body); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: .08em; color: var(--red); padding-top: 10px; }
+.preview-body ul, .preview-body ol { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; font-size: 0.9375rem; }
+.problems { margin: 0; padding: 10px 16px 10px 32px; background: var(--hl); color: var(--hl-ink); font-size: 0.875rem; display: grid; gap: 4px; }
+@media (min-width: 900px) {
+  .editor-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .preview { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 80px); max-height: calc(100vh - 110px); overflow: auto; }
+}
+
+/* ---------- toast ---------- */
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 10; max-width: min(92vw, 480px);
+  background: var(--ink); color: var(--card);
+  padding: 12px 16px; border-radius: var(--radius); box-shadow: var(--shadow);
+  font-weight: 700; font-size: 0.9375rem;
+}
+
+@media (max-width: 520px) {
+  .recipe-head, .cookbar, .recipe-body > section, .extras > section { padding-left: 16px; padding-right: 16px; }
+  .shelf-title .btn { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+
+<header class="topbar">
+  <div class="wrap">
+    <span id="nav-slot"></span>
+    <span class="status" id="status" data-mode="loading" title="">
+      <span id="status-text">Opening…</span>
+    </span>
+  </div>
+</header>
+<main class="wrap" id="view"></main>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="parser.js"></script>
+<script>
+(function () {
+  'use strict';
+  const P = window.RecipeParser;
+
+  const ASK_PROMPT = [
+    'Give me a recipe for [DISH]. Format it for my cookbook:',
+    '- Start with the recipe name as a # heading, then one sentence about it.',
+    '- Then a line like: Serves: 4 | Prep: 15 min | Cook: 30 min',
+    '- "## Ingredients" as a bulleted list with amounts. Label parts with bold lines like **For the sauce:**',
+    '- "## Directions" as a numbered list. Write the exact amount of every ingredient into the step where it is used, like "Add 2 tbsp olive oil".',
+    '- "## Notes" for tips, swaps and storage.',
+  ].join('\n');
+
+  const state = {
+    recipes: [],
+    loaded: false,
+    mode: 'loading', // loading | cloud | local
+    canWrite: true,
+    view: 'library', // library | recipe | edit
+    currentId: null,
+    editingId: null,
+    query: '',
+    tag: '',
+    sort: 'newest',
+    scale: {},
+    confirmDelete: false,
+    pendingHash: '',
+  };
+
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const viewEl = $('#view');
+
+  // ---------------------------------------------------------------------------
+  // Small helpers
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function inlineMd(s) {
+    return esc(s)
+      .replace(/\[([^\]]+)\]\((?:https?:)[^)\s]+\)/g, '$1')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.+?)__/g, '<strong>$1</strong>')
+      .replace(/(^|[^\w*])\*(?!\s)(.+?)\*(?!\w)/g, '$1<em>$2</em>')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\n/g, '<br>');
+  }
+
+  // Inline Markdown plus marked-up amounts. opts: {mode, factor, words, tag}
+  function rich(text, opts) {
+    const box = document.createElement('div');
+    box.innerHTML = inlineMd(text);
+    if (!opts) return box.innerHTML;
+    const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (const node of nodes) {
+      const pieces = P.splitAmounts(node.data, opts);
+      if (!pieces.some((p) => p.qty)) continue;
+      const frag = document.createDocumentFragment();
+      for (const p of pieces) {
+        if (!p.qty) { frag.appendChild(document.createTextNode(p.text)); continue; }
+        const el = document.createElement(opts.tag || 'mark');
+        el.className = opts.tag === 'b' ? 'amt-i' : 'amt';
+        if (p.qty.changed) { el.classList.add('changed'); el.title = 'Original: ' + p.qty.original; }
+        el.textContent = p.text;
+        frag.appendChild(el);
+      }
+      node.parentNode.replaceChild(frag, node);
+    }
+    return box.innerHTML;
+  }
+
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; }, 3200);
+  }
+
+  const local = {
+    get(key, fallback) {
+      try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); }
+      catch (e) { return fallback; }
+    },
+    set(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+      catch (e) { return false; }
+    },
+    remove(key) { try { localStorage.removeItem(key); } catch (e) { /* ignore */ } },
+  };
+
+  async function copyText(text, onFail) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Copied');
+    } catch (e) {
+      onFail();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Storage: the artifact's database when available, this browser otherwise
+
+  const LOCAL_KEY = 'cookbook.recipes.v1';
+  const store = {
+    db: null,
+    queues: new Map(),
+
+    async init() {
+      let db = null;
+      let user = null;
+      try {
+        if (window.claude && typeof window.claude.use === 'function') {
+          [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+        }
+      } catch (e) { db = null; }
+
+      if (db) {
+        this.db = db;
+        state.mode = 'cloud';
+        if (user) {
+          try { state.canWrite = (await user.canEdit()) || (await user.isOwner()); }
+          catch (e) { state.canWrite = true; }
+        }
+        db.collection('recipes').onSnapshot((snap) => {
+          state.recipes = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+          state.loaded = true;
+          onData();
+        }, (err) => {
+          state.loaded = true;
+          if (err && (err.code === 'revoked' || err.code === 'not_granted')) state.canWrite = false;
+          toast('Recipes stopped updating. Reload the page to reconnect.');
+          onData();
+        });
+      } else {
+        state.mode = 'local';
+        const map = local.get(LOCAL_KEY, {}) || {};
+        state.recipes = Object.keys(map).map((id) => Object.assign({ id }, map[id]));
+        state.loaded = true;
+        onData();
+      }
+    },
+
+    run(id, fn) {
+      const prev = this.queues.get(id) || Promise.resolve();
+      const next = prev.catch(() => {}).then(fn);
+      this.queues.set(id, next);
+      return next;
+    },
+
+    async retry(fn) {
+      try { return await fn(); }
+      catch (e) {
+        if (e && e.code === 'unavailable') {
+          await new Promise((r) => setTimeout(r, 400 + Math.random() * 700));
+          return fn();
+        }
+        throw e;
+      }
+    },
+
+    saveLocal() {
+      const map = {};
+      for (const r of state.recipes) { const copy = Object.assign({}, r); delete copy.id; map[r.id] = copy; }
+      if (!local.set(LOCAL_KEY, map)) toast('This browser is not saving recipes. Open CookBook while signed in to claude.ai to keep them.');
+    },
+
+    async put(id, body) {
+      if (this.db) {
+        return this.run(id, () => this.retry(() => this.db.collection('recipes').doc(id).set(body)));
+      }
+      const i = state.recipes.findIndex((r) => r.id === id);
+      const rec = Object.assign({ id }, body);
+      if (i >= 0) state.recipes[i] = rec; else state.recipes.push(rec);
+      this.saveLocal();
+      onData();
+    },
+
+    async patch(id, fields) {
+      if (this.db) {
+        return this.run(id, () => this.retry(() => this.db.collection('recipes').doc(id).update(fields)));
+      }
+      const i = state.recipes.findIndex((r) => r.id === id);
+      if (i >= 0) state.recipes[i] = Object.assign({}, state.recipes[i], fields);
+      this.saveLocal();
+      onData();
+    },
+
+    async remove(id) {
+      if (this.db) {
+        return this.run(id, () => this.retry(() => this.db.collection('recipes').doc(id).delete()));
+      }
+      state.recipes = state.recipes.filter((r) => r.id !== id);
+      this.saveLocal();
+      onData();
+    },
+  };
+
+  function writeFailed(e) {
+    const code = e && e.code;
+    if (code === 'invalid_argument' || code === 'not_granted' || code === 'revoked' || code === 'capability_disabled') {
+      state.canWrite = false;
+      toast('You can read this cookbook but not change it. Ask its owner for edit access.');
+      render();
+    } else if (code === 'quota_exceeded') {
+      toast('The cookbook is full. Delete a few recipes to make room.');
+    } else if (code === 'resource_exhausted') {
+      toast('Too many changes at once. Wait a moment and try again.');
+    } else {
+      toast('That change did not save. Check your connection and try again.');
+    }
+  }
+
+  // Per-viewer cooking progress (ticked ingredients and finished steps).
+  const PROGRESS_KEY = 'cookbook.progress.v1';
+  let progress = local.get(PROGRESS_KEY, {}) || {};
+  function getProgress(id) { return progress[id] || { ing: [], steps: [] }; }
+  function toggleProgress(id, kind, index) {
+    const p = getProgress(id);
+    const list = new Set(p[kind]);
+    if (list.has(index)) list.delete(index); else list.add(index);
+    progress[id] = Object.assign({}, p, { [kind]: Array.from(list) });
+    local.set(PROGRESS_KEY, progress);
+    return list.has(index);
+  }
+  function clearProgress(id) { delete progress[id]; local.set(PROGRESS_KEY, progress); }
+
+  // ---------------------------------------------------------------------------
+  // Derived data
+
+  function byId(id) { return state.recipes.find((r) => r.id === id) || null; }
+
+  function haystack(r) {
+    const parts = [r.title, r.description, (r.tags || []).join(' ')];
+    for (const g of r.ingredients || []) parts.push(g.title, g.items.join(' '));
+    return P.stripInline(parts.join(' ')).toLowerCase();
+  }
+
+  function visibleRecipes() {
+    const terms = state.query.toLowerCase().split(/\s+/).filter(Boolean);
+    let list = state.recipes.filter((r) => {
+      if (state.tag === '*fav' && !r.favorite) return false;
+      if (state.tag && state.tag !== '*fav' && !(r.tags || []).includes(state.tag)) return false;
+      if (!terms.length) return true;
+      const h = haystack(r);
+      return terms.every((t) => h.includes(t));
+    });
+    if (state.sort === 'az') list = list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    else list = list.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return list;
+  }
+
+  function tagCounts() {
+    const counts = new Map();
+    for (const r of state.recipes) for (const t of r.tags || []) counts.set(t, (counts.get(t) || 0) + 1);
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }
+
+  function timeLabel(r) { return r.totalTime || r.cookTime || r.prepTime || ''; }
+
+  function servingsLabel(servings, factor) {
+    if (!servings) return '';
+    const shown = factor === 1 ? servings : P.scaleText(servings, { mode: 'ingredient', factor });
+    return /^\d+(?:\s*(?:-|–|to)\s*\d+)?$/.test(servings.trim()) ? 'Serves ' + shown : 'Makes ' + shown;
+  }
+
+  function parseTags(text) {
+    const seen = new Set();
+    for (const raw of String(text || '').split(',')) {
+      const t = raw.trim().replace(/^#/, '').toLowerCase().replace(/\s+/g, ' ');
+      if (t && t.length <= 30) seen.add(t);
+    }
+    return Array.from(seen).slice(0, 12);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rendering
+
+  function renderTopbar() {
+    const slot = $('#nav-slot');
+    if (state.view === 'library') {
+      slot.innerHTML = '<button class="brand" type="button" data-action="home"><span class="brand-mark" aria-hidden="true"></span>CookBook</button>';
+    } else {
+      slot.innerHTML = '<button class="btn quiet" type="button" data-action="back">← All recipes</button>';
+    }
+    const status = $('#status');
+    status.dataset.mode = state.mode;
+    let text = 'Opening…';
+    let tip = '';
+    if (state.mode === 'cloud') {
+      text = state.canWrite ? 'Synced' : 'View only';
+      tip = state.canWrite ? 'Recipes are saved to this cookbook and show up on every device.' : 'You can read these recipes but not change them.';
+    } else if (state.mode === 'local') {
+      text = 'This browser only';
+      tip = 'Recipes are saved in this browser only. Open CookBook while signed in to claude.ai to sync them.';
+    }
+    $('#status-text').textContent = text;
+    status.title = tip;
+  }
+
+  function render() {
+    renderTopbar();
+    if (state.view === 'recipe') renderRecipe();
+    else if (state.view === 'edit') renderEditor();
+    else renderLibrary();
+  }
+
+  function onData() {
+    renderTopbar();
+    if (state.pendingHash && state.loaded) {
+      const id = state.pendingHash;
+      state.pendingHash = '';
+      if (byId(id)) { openRecipe(id); return; }
+    }
+    if (state.view === 'library') { renderLibraryContent(); return; }
+    if (state.view === 'recipe') {
+      if (!byId(state.currentId)) { goLibrary(); return; }
+      refreshRecipe();
+    }
+    if (state.view === 'edit') updatePreview();
+  }
+
+  // ----- library -----
+
+  function renderLibrary() {
+    viewEl.innerHTML = `
+      <section class="library">
+        <div class="shelf-head">
+          <div class="shelf-title">
+            <h1>Recipes</h1>
+            <span class="count" id="count"></span>
+            ${state.canWrite ? '<button class="btn primary" type="button" data-action="new">+ Add recipe</button>' : ''}
+          </div>
+          <div class="filters" id="filters">
+            <input class="input search" id="q" type="search" placeholder="Search recipes or ingredients" aria-label="Search recipes" value="${esc(state.query)}" autocomplete="off">
+            <select class="input" id="sort" aria-label="Sort recipes">
+              <option value="newest"${state.sort === 'newest' ? ' selected' : ''}>Newest first</option>
+              <option value="az"${state.sort === 'az' ? ' selected' : ''}>A to Z</option>
+            </select>
+          </div>
+          <div class="chips" id="chips" role="group" aria-label="Filter by tag"></div>
+          <p class="muted" id="mode-note" hidden>Recipes are saved in this browser only. Open CookBook from claude.ai while signed in to keep them on every device.</p>
+        </div>
+        <div id="shelf"></div>
+        <details class="howto" id="howto">
+          <summary>How to ask Claude for a recipe</summary>
+          ${promptBox()}
+        </details>
+      </section>`;
+    renderLibraryContent();
+  }
+
+  function promptBox() {
+    return `
+      <div class="prompt-box">
+        <p class="muted">Paste this into Claude and swap in the dish. Replies in this shape import cleanly, with every amount written into the steps.</p>
+        <pre class="prompt-text" id="ask-prompt">${esc(ASK_PROMPT)}</pre>
+        <div><button class="btn" type="button" data-action="copy-prompt">Copy prompt</button></div>
+      </div>`;
+  }
+
+  function renderLibraryContent() {
+    const shelf = $('#shelf');
+    if (!shelf) return;
+    const total = state.recipes.length;
+    const filters = $('#filters');
+    const chips = $('#chips');
+    const howto = $('#howto');
+    $('#count').textContent = state.loaded ? plural(total, 'recipe', 'recipes') : '';
+    $('#mode-note').hidden = state.mode !== 'local';
+    filters.hidden = !total;
+    chips.hidden = !total;
+    howto.hidden = !total;
+
+    if (!state.loaded) {
+      shelf.innerHTML = '<p class="notice">Opening your recipe box…</p>';
+      return;
+    }
+    if (!total) {
+      shelf.innerHTML = emptyState();
+      return;
+    }
+
+    const favs = state.recipes.filter((r) => r.favorite).length;
+    let chipHtml = `<button class="chip" type="button" data-action="tag" data-tag="" aria-pressed="${!state.tag}">All <span class="n">${total}</span></button>`;
+    if (favs) chipHtml += `<button class="chip" type="button" data-action="tag" data-tag="*fav" aria-pressed="${state.tag === '*fav'}">★ Favorites <span class="n">${favs}</span></button>`;
+    for (const [t, n] of tagCounts().slice(0, 24)) {
+      chipHtml += `<button class="chip" type="button" data-action="tag" data-tag="${esc(t)}" aria-pressed="${state.tag === t}">${esc(t)} <span class="n">${n}</span></button>`;
+    }
+    chips.innerHTML = chipHtml;
+
+    const list = visibleRecipes();
+    if (!list.length) {
+      shelf.innerHTML = `<div class="notice"><p>No recipes match${state.query ? ' “' + esc(state.query) + '”' : ' this filter'}.</p><button class="btn" type="button" data-action="clear-filters">Show all recipes</button></div>`;
+      return;
+    }
+    shelf.innerHTML = '<div class="grid">' + list.map(cardHtml).join('') + '</div>';
+  }
+
+  function cardHtml(r) {
+    const meta = [];
+    if (r.servings) meta.push(servingsLabel(r.servings, 1));
+    if (timeLabel(r)) meta.push(timeLabel(r));
+    const n = P.countItems(r.ingredients);
+    if (n) meta.push(plural(n, 'ingredient', 'ingredients'));
+    const tags = (r.tags || []).map((t) => '#' + t).join('  ');
+    return `
+      <button class="card" type="button" data-action="open" data-id="${esc(r.id)}">
+        <span class="card-title">${esc(r.title || 'Untitled recipe')}</span>
+        ${r.favorite ? '<span class="card-star" aria-label="Favorite">★</span>' : ''}
+        <span class="card-body">
+          <span class="card-desc">${esc(P.stripInline(r.description || '')) || '&nbsp;'}</span>
+          <span class="card-meta">${esc(meta.join(' · ')) || '&nbsp;'}</span>
+          <span class="card-tags">${esc(tags) || '&nbsp;'}</span>
+        </span>
+      </button>`;
+  }
+
+  function emptyState() {
+    if (!state.canWrite) {
+      return '<div class="notice"><p>There are no recipes in this cookbook yet.</p></div>';
+    }
+    return `
+      <div class="empty">
+        <div class="empty-head">
+          <h2>Your recipe box is empty</h2>
+          <p>Every recipe you get from Claude can live here, with the amounts kept in the directions.</p>
+        </div>
+        <ol class="howto-steps">
+          <li><div><strong>Ask Claude for a recipe</strong><span class="muted">Use the prompt below so the reply comes back in a shape CookBook reads well.</span></div></li>
+          <li><div><strong>Copy Claude's whole reply</strong><span class="muted">Use the copy button under the reply.</span></div></li>
+          <li><div><strong>Tap Add recipe and paste it</strong><span class="muted">Check the preview, add a few tags and save.</span></div></li>
+        </ol>
+        <div class="empty-actions">
+          <button class="btn primary" type="button" data-action="new">+ Add recipe</button>
+        </div>
+        <div style="padding: 0 20px 20px">${promptBox()}</div>
+      </div>`;
+  }
+
+  // ----- recipe -----
+
+  let renderedSignature = '';
+
+  function recipeSignature(r) {
+    const copy = Object.assign({}, r);
+    delete copy.myNotes;
+    delete copy.updatedAt;
+    return JSON.stringify(copy) + '|' + state.canWrite + '|' + state.confirmDelete + '|' + (state.scale[r.id] || 1);
+  }
+
+  function refreshRecipe() {
+    const r = byId(state.currentId);
+    if (!r) return;
+    const notes = $('#my-notes');
+    if (recipeSignature(r) !== renderedSignature) {
+      renderRecipe();
+      return;
+    }
+    if (notes && document.activeElement !== notes && notes.value !== (r.myNotes || '')) notes.value = r.myNotes || '';
+  }
+
+  function scaleControl(r) {
+    const factor = state.scale[r.id] || 1;
+    const base = P.servingsNumber(r.servings);
+    let label;
+    if (base && r.servings) {
+      label = esc(servingsLabel(r.servings, factor));
+      if (factor !== 1) label += ` <small>×${esc(P.formatNumber(factor, 'decimal'))}</small>`;
+    } else {
+      label = esc(P.formatNumber(factor, 'fraction')) + '× recipe';
+    }
+    return `
+      <div class="scaler" role="group" aria-label="Scale the recipe">
+        <button type="button" data-action="scale" data-dir="-1" aria-label="Make less">−</button>
+        <output aria-live="polite">${label}</output>
+        <button type="button" data-action="scale" data-dir="1" aria-label="Make more">+</button>
+      </div>
+      ${factor !== 1 ? '<button class="btn quiet" type="button" data-action="scale-reset">Reset amounts</button>' : ''}`;
+  }
+
+  const FACTOR_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6];
+  function nextFactor(r, dir) {
+    const factor = state.scale[r.id] || 1;
+    const base = P.servingsNumber(r.servings);
+    if (base && base <= 12 && Number.isInteger(base)) {
+      const target = Math.max(1, Math.round(base * factor) + dir);
+      return target / base;
+    }
+    const i = FACTOR_STEPS.findIndex((f) => f >= factor - 1e-9);
+    const at = i < 0 ? FACTOR_STEPS.length - 1 : i;
+    const j = Math.min(FACTOR_STEPS.length - 1, Math.max(0, at + dir));
+    return FACTOR_STEPS[j];
+  }
+
+  function renderRecipe() {
+    const r = byId(state.currentId);
+    if (!r) { goLibrary(); return; }
+    const active = document.activeElement;
+    const focusAction = active && active.dataset ? active.dataset.action : '';
+    const focusDir = active && active.dataset ? active.dataset.dir : '';
+    renderedSignature = recipeSignature(r);
+    const factor = state.scale[r.id] || 1;
+    const words = P.ingredientWords(r.ingredients);
+    const prog = getProgress(r.id);
+    const ingCount = P.countItems(r.ingredients);
+    const stepCount = P.countItems(r.steps);
+
+    let ingIndex = 0;
+    const ingHtml = (r.ingredients || []).map((g) => `
+      ${g.title ? `<h3 class="group">${esc(g.title)}</h3>` : ''}
+      <ul class="ing-list">${g.items.map((item) => {
+        const i = ingIndex++;
+        const on = prog.ing.includes(i);
+        return `<li><label class="ing${on ? ' is-done' : ''}"><input type="checkbox" data-ing="${i}"${on ? ' checked' : ''}><span>${rich(item, { mode: 'ingredient', factor, tag: 'b' })}</span></label></li>`;
+      }).join('')}</ul>`).join('');
+
+    let stepIndex = 0;
+    const stepHtml = (r.steps || []).map((g) => `
+      ${g.title ? `<h3 class="group">${esc(g.title)}</h3>` : ''}
+      <ol class="step-list">${g.items.map((item) => {
+        const i = stepIndex++;
+        const on = prog.steps.includes(i);
+        return `<li class="${on ? 'is-done' : ''}"><button type="button" class="step" data-action="step" data-step="${i}" aria-pressed="${on}"><span class="step-num" aria-hidden="true">${on ? '✓' : i + 1}</span><span class="step-text">${rich(item, { mode: 'step', factor, words, tag: 'mark' })}</span></button></li>`;
+      }).join('')}</ol>`).join('');
+
+    const facts = [];
+    if (r.servings) facts.push(['Yield', servingsLabel(r.servings, factor).replace(/^(Serves|Makes) /, '')]);
+    if (r.prepTime) facts.push(['Prep', r.prepTime]);
+    if (r.cookTime) facts.push(['Cook', r.cookTime]);
+    if (r.totalTime) facts.push(['Total', r.totalTime]);
+
+    const notesHtml = (r.notes || []).map((g) => `
+      <div class="note-group">
+        ${g.title ? `<h3 class="group">${esc(g.title)}</h3>` : ''}
+        <ul class="note-list">${g.items.map((x) => `<li>${rich(x)}</li>`).join('')}</ul>
+      </div>`).join('');
+
+    const hasProgress = prog.ing.length || prog.steps.length;
+    const wakeSupported = 'wakeLock' in navigator;
+
+    viewEl.innerHTML = `
+      <div class="recipe-page">
+        <article class="recipe">
+          <header class="recipe-head">
+            <h1>${esc(r.title || 'Untitled recipe')}</h1>
+            ${r.description ? `<p class="desc">${rich(r.description)}</p>` : ''}
+            ${facts.length ? `<dl class="facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+            ${(r.tags || []).length ? `<div class="tags">${r.tags.map((t) => `<span class="tag">#${esc(t)}</span>`).join('')}</div>` : ''}
+            <div class="recipe-actions">
+              ${state.canWrite
+                ? `<button class="btn" type="button" data-action="favorite" aria-pressed="${!!r.favorite}"><span class="star" aria-hidden="true">${r.favorite ? '★' : '☆'}</span>${r.favorite ? 'Favorite' : 'Add to favorites'}</button>
+                   <button class="btn" type="button" data-action="edit">Edit</button>`
+                : ''}
+              <button class="btn" type="button" data-action="copy-recipe">Copy as text</button>
+              ${state.canWrite ? '<button class="btn quiet danger" type="button" data-action="ask-delete">Delete</button>' : ''}
+            </div>
+            ${state.confirmDelete ? `
+              <div class="confirm" role="alertdialog" aria-label="Delete recipe">
+                <p>Delete “${esc(r.title)}”? This can't be undone.</p>
+                <button class="btn danger solid" type="button" data-action="delete">Delete recipe</button>
+                <button class="btn" type="button" data-action="cancel-delete">Keep it</button>
+              </div>` : ''}
+            <div class="copy-fallback" id="copy-fallback" hidden>
+              <p class="muted">Copying is blocked here. Select the text below and copy it.</p>
+              <textarea class="textarea" id="copy-area" readonly rows="8"></textarea>
+            </div>
+          </header>
+
+          <div class="cookbar">
+            ${scaleControl(r)}
+            <span class="spacer"></span>
+            ${wakeSupported ? `<button class="btn" type="button" data-action="wake" id="wake-btn" aria-pressed="${!!wake.lock}">Keep screen on</button>` : ''}
+            ${hasProgress ? '<button class="btn quiet" type="button" data-action="clear-progress">Clear ticks</button>' : ''}
+          </div>
+
+          <div class="recipe-body">
+            <section class="ingredients" aria-labelledby="ing-h">
+              <div class="sticky">
+                <h2 id="ing-h">Ingredients <span class="n">${ingCount}</span></h2>
+                ${ingHtml || '<p class="muted" style="padding-top:12px">No ingredients listed.</p>'}
+              </div>
+            </section>
+            <section class="directions" aria-labelledby="dir-h">
+              <h2 id="dir-h">Directions <span class="n">${stepCount ? 'Tap a step when it’s done' : ''}</span></h2>
+              ${stepHtml || '<p class="muted" style="padding-top:12px">No directions listed.</p>'}
+            </section>
+          </div>
+
+          <div class="extras">
+            ${notesHtml ? `<section aria-labelledby="notes-h"><h2 id="notes-h">Notes</h2>${notesHtml}</section>` : ''}
+            <section class="my-notes" aria-labelledby="mine-h">
+              <h2 id="mine-h">My notes</h2>
+              ${state.canWrite
+                ? `<textarea class="textarea" id="my-notes" placeholder="What you changed, what to try next time…" aria-labelledby="mine-h">${esc(r.myNotes || '')}</textarea>
+                   <p class="saved" id="notes-saved" aria-live="polite"></p>`
+                : `<p class="${r.myNotes ? '' : 'muted'}" style="white-space:pre-line">${esc(r.myNotes || 'No notes yet.')}</p>`}
+            </section>
+          </div>
+        </article>
+      </div>`;
+    if (focusAction) {
+      const sel = '[data-action="' + focusAction + '"]' + (focusDir ? '[data-dir="' + focusDir + '"]' : '');
+      const el = viewEl.querySelector(sel);
+      if (el) el.focus({ preventScroll: true });
+    }
+  }
+
+  // ----- editor -----
+
+  let preview = null;
+  let titleTouched = false;
+
+  function renderEditor() {
+    const editing = state.editingId ? byId(state.editingId) : null;
+    const draft = editing ? null : local.get('cookbook.draft.v1', null);
+    const source = editing ? (editing.source || P.toMarkdown(editing)) : (draft && draft.source) || '';
+    const tags = editing ? (editing.tags || []).join(', ') : (draft && draft.tags) || '';
+    titleTouched = editing ? P.parseRecipe(source).title !== editing.title : !!(draft && draft.titleTouched);
+    const titleValue = editing ? editing.title : (draft && draft.title) || '';
+
+    viewEl.innerHTML = `
+      <section class="editor">
+        <div class="editor-head">
+          <h1>${editing ? 'Edit recipe' : 'Add a recipe'}</h1>
+          <p>${editing
+            ? 'Change the text and the preview updates as you type.'
+            : 'Copy Claude’s whole reply and paste it below. CookBook picks out the title, amounts, ingredients and directions.'}</p>
+        </div>
+        <div class="editor-grid">
+          <div class="editor-form">
+            <label class="field" for="src">
+              <span>Recipe text</span>
+              <textarea class="textarea" id="src" spellcheck="false" placeholder="Paste Claude's recipe here">${esc(source)}</textarea>
+            </label>
+            <label class="field" for="title-input">
+              <span>Title</span>
+              <input class="input" id="title-input" type="text" value="${esc(titleValue)}" placeholder="Taken from the recipe text" autocomplete="off">
+            </label>
+            <label class="field" for="tags-input">
+              <span>Tags</span>
+              <input class="input" id="tags-input" type="text" value="${esc(tags)}" placeholder="dinner, chicken, quick" autocomplete="off">
+              <small>Separate tags with commas.</small>
+            </label>
+            <div class="editor-actions">
+              <button class="btn primary" type="button" data-action="save" id="save-btn">${editing ? 'Save changes' : 'Save recipe'}</button>
+              <button class="btn" type="button" data-action="cancel-edit">Cancel</button>
+              <span class="why" id="save-why"></span>
+            </div>
+          </div>
+          <aside class="preview" id="preview" aria-live="polite" aria-label="Preview"></aside>
+        </div>
+      </section>`;
+    updatePreview();
+    if (!editing && !source) $('#src').focus();
+  }
+
+  function updatePreview() {
+    const src = $('#src');
+    if (!src) return;
+    preview = P.parseRecipe(src.value);
+    const titleInput = $('#title-input');
+    if (!titleTouched) titleInput.value = preview.title;
+    const title = titleInput.value.trim() || preview.title;
+    const ingCount = P.countItems(preview.ingredients);
+    const stepCount = P.countItems(preview.steps);
+    const words = P.ingredientWords(preview.ingredients);
+    let withAmounts = 0;
+    for (const g of preview.steps) for (const s of g.items) if (P.findQuantities(s, { mode: 'step', words }).length) withAmounts++;
+
+    const problems = src.value.trim() ? P.checkRecipe(Object.assign({}, preview, { title })) : [];
+    const dup = !state.editingId && title && state.recipes.some((r) => (r.title || '').toLowerCase() === title.toLowerCase());
+    if (dup) problems.push('You already have a recipe called “' + title + '”. Saving adds a second copy.');
+
+    const saveBtn = $('#save-btn');
+    const canSave = !!title && (ingCount > 0 || stepCount > 0) && state.canWrite;
+    saveBtn.disabled = !canSave;
+    $('#save-why').textContent = canSave ? '' : (src.value.trim() ? 'Needs a title and at least ingredients or directions.' : 'Paste a recipe to begin.');
+
+    const meta = [];
+    if (preview.servings) meta.push(servingsLabel(preview.servings, 1));
+    if (preview.prepTime) meta.push('Prep ' + preview.prepTime);
+    if (preview.cookTime) meta.push('Cook ' + preview.cookTime);
+    if (preview.totalTime) meta.push('Total ' + preview.totalTime);
+
+    const box = $('#preview');
+    if (!src.value.trim()) {
+      box.innerHTML = `<p class="preview-label">Preview</p>
+        <div class="preview-body"><p class="muted">The recipe shows up here as you paste it, so you can check it before saving.</p></div>`;
+      return;
+    }
+    const list = (groups, ordered, opts) => groups.map((g) => `
+      ${g.title ? `<h3>${esc(g.title)}</h3>` : ''}
+      <${ordered ? 'ol' : 'ul'}>${g.items.map((x) => `<li>${rich(x, opts)}</li>`).join('')}</${ordered ? 'ol' : 'ul'}>`).join('');
+
+    box.innerHTML = `
+      <p class="preview-label">Preview</p>
+      <div class="preview-head">
+        <h2 class="${title ? '' : 'missing'}">${esc(title || 'No title yet')}</h2>
+        ${meta.length ? `<p class="preview-stats">${esc(meta.join(' · '))}</p>` : ''}
+        <p class="preview-stats">${plural(ingCount, 'ingredient', 'ingredients')} · ${plural(stepCount, 'step', 'steps')}${stepCount ? ` · amounts in ${withAmounts} of ${stepCount} steps` : ''}</p>
+      </div>
+      ${problems.length ? `<ul class="problems">${problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
+      <div class="preview-body">
+        ${preview.description ? `<p class="muted">${rich(preview.description)}</p>` : ''}
+        ${ingCount ? `<h3>Ingredients</h3>${list(preview.ingredients, false, { mode: 'ingredient', factor: 1, tag: 'b' })}` : ''}
+        ${stepCount ? `<h3>Directions</h3>${list(preview.steps, true, { mode: 'step', factor: 1, words, tag: 'mark' })}` : ''}
+        ${preview.notes.length ? `<h3>Notes</h3>${list(preview.notes, false)}` : ''}
+      </div>`;
+  }
+
+  function saveDraft() {
+    if (state.editingId) return;
+    const src = $('#src');
+    if (!src) return;
+    local.set('cookbook.draft.v1', {
+      source: src.value,
+      title: $('#title-input').value,
+      titleTouched,
+      tags: $('#tags-input').value,
+    });
+  }
+
+  function newId(title) {
+    return P.slugify(title).slice(0, 48) + '-' + Date.now().toString(36).slice(-5) + Math.random().toString(36).slice(2, 5);
+  }
+
+  async function saveRecipe() {
+    if (!preview) return;
+    const source = $('#src').value;
+    const title = $('#title-input').value.trim() || preview.title;
+    const existing = state.editingId ? byId(state.editingId) : null;
+    const now = Date.now();
+    const body = {
+      title,
+      description: preview.description,
+      servings: preview.servings,
+      prepTime: preview.prepTime,
+      cookTime: preview.cookTime,
+      totalTime: preview.totalTime,
+      ingredients: preview.ingredients,
+      steps: preview.steps,
+      notes: preview.notes,
+      tags: parseTags($('#tags-input').value),
+      favorite: existing ? !!existing.favorite : false,
+      myNotes: existing ? existing.myNotes || '' : '',
+      source,
+      createdAt: existing ? existing.createdAt || now : now,
+      updatedAt: now,
+    };
+    if (JSON.stringify(body).length > 200000) {
+      toast('This recipe is too long to save. Remove anything that is not part of the recipe and try again.');
+      return;
+    }
+    const id = existing ? existing.id : newId(title);
+    const btn = $('#save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      await store.put(id, body);
+      if (!existing) local.remove('cookbook.draft.v1');
+      toast(existing ? 'Changes saved' : 'Saved to your cookbook');
+      if (!byId(id)) state.recipes.push(Object.assign({ id }, body));
+      openRecipe(id);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = existing ? 'Save changes' : 'Save recipe';
+      writeFailed(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Navigation
+
+  function goLibrary() {
+    releaseWake();
+    state.view = 'library';
+    state.currentId = null;
+    state.editingId = null;
+    state.confirmDelete = false;
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  function openRecipe(id) {
+    state.view = 'recipe';
+    state.currentId = id;
+    state.editingId = null;
+    state.confirmDelete = false;
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  function openEditor(id) {
+    if (!state.canWrite) return;
+    releaseWake();
+    state.view = 'edit';
+    state.editingId = id || null;
+    preview = null;
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Keep the screen awake while cooking
+
+  const wake = { lock: null, wanted: false };
+  async function requestWake() {
+    try {
+      wake.lock = await navigator.wakeLock.request('screen');
+      wake.lock.addEventListener('release', () => { wake.lock = null; syncWakeButton(); });
+    } catch (e) {
+      wake.lock = null;
+      wake.wanted = false;
+      toast('This browser won’t keep the screen on here.');
+    }
+    syncWakeButton();
+  }
+  function releaseWake() {
+    wake.wanted = false;
+    if (wake.lock) { wake.lock.release().catch(() => {}); wake.lock = null; }
+  }
+  function syncWakeButton() {
+    const b = $('#wake-btn');
+    if (b) b.setAttribute('aria-pressed', String(!!wake.lock));
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && wake.wanted && !wake.lock) requestWake();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Events
+
+  let notesTimer = null;
+
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+    const action = el.dataset.action;
+    const r = state.currentId ? byId(state.currentId) : null;
+
+    switch (action) {
+      case 'home':
+      case 'back':
+        if (state.view === 'edit' && state.editingId) openRecipe(state.editingId);
+        else goLibrary();
+        break;
+      case 'new': openEditor(null); break;
+      case 'open': openRecipe(el.dataset.id); break;
+      case 'tag':
+        state.tag = el.dataset.tag;
+        renderLibraryContent();
+        break;
+      case 'clear-filters':
+        state.tag = '';
+        state.query = '';
+        renderLibrary();
+        break;
+      case 'copy-prompt':
+        copyText(ASK_PROMPT, () => {
+          const pre = $('#ask-prompt');
+          const range = document.createRange();
+          range.selectNodeContents(pre);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          toast('Copying is blocked here. The prompt is selected, so copy it yourself.');
+        });
+        break;
+      case 'step': {
+        if (!r) break;
+        const i = +el.dataset.step;
+        const on = toggleProgress(r.id, 'steps', i);
+        const li = el.closest('li');
+        li.classList.toggle('is-done', on);
+        el.setAttribute('aria-pressed', String(on));
+        el.querySelector('.step-num').textContent = on ? '✓' : String(i + 1);
+        break;
+      }
+      case 'clear-progress':
+        if (r) { clearProgress(r.id); renderRecipe(); }
+        break;
+      case 'scale':
+        if (r) { state.scale[r.id] = nextFactor(r, +el.dataset.dir); renderRecipe(); }
+        break;
+      case 'scale-reset':
+        if (r) { delete state.scale[r.id]; renderRecipe(); }
+        break;
+      case 'wake':
+        if (wake.lock) { releaseWake(); syncWakeButton(); }
+        else { wake.wanted = true; requestWake(); }
+        break;
+      case 'favorite':
+        if (r) store.patch(r.id, { favorite: !r.favorite, updatedAt: Date.now() }).catch(writeFailed);
+        break;
+      case 'edit': if (r) openEditor(r.id); break;
+      case 'copy-recipe':
+        if (r) {
+          const text = P.toMarkdown(r);
+          copyText(text, () => {
+            const box = $('#copy-fallback');
+            box.hidden = false;
+            const area = $('#copy-area');
+            area.value = text;
+            area.focus();
+            area.select();
+          });
+        }
+        break;
+      case 'ask-delete': state.confirmDelete = true; renderRecipe(); break;
+      case 'cancel-delete': state.confirmDelete = false; renderRecipe(); break;
+      case 'delete':
+        if (r) {
+          const title = r.title;
+          store.remove(r.id).then(() => toast('Deleted “' + title + '”')).catch(writeFailed);
+          clearProgress(r.id);
+          goLibrary();
+        }
+        break;
+      case 'save': saveRecipe(); break;
+      case 'cancel-edit':
+        if (!state.editingId) local.remove('cookbook.draft.v1');
+        if (state.editingId) openRecipe(state.editingId); else goLibrary();
+        break;
+    }
+  });
+
+  let previewTimer = null;
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.id === 'q') {
+      state.query = t.value;
+      renderLibraryContent();
+    } else if (t.id === 'src') {
+      clearTimeout(previewTimer);
+      previewTimer = setTimeout(() => { updatePreview(); saveDraft(); }, 120);
+    } else if (t.id === 'title-input') {
+      titleTouched = t.value.trim() !== '';
+      updatePreview();
+      saveDraft();
+    } else if (t.id === 'tags-input') {
+      saveDraft();
+    } else if (t.id === 'my-notes') {
+      const id = state.currentId;
+      const value = t.value;
+      $('#notes-saved').textContent = 'Saving…';
+      clearTimeout(notesTimer);
+      notesTimer = setTimeout(() => {
+        store.patch(id, { myNotes: value, updatedAt: Date.now() })
+          .then(() => { const s = $('#notes-saved'); if (s) s.textContent = 'Saved'; })
+          .catch((err) => { const s = $('#notes-saved'); if (s) s.textContent = ''; writeFailed(err); });
+      }, 800);
+    }
+  });
+
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.id === 'sort') {
+      state.sort = t.value;
+      renderLibraryContent();
+    } else if (t.matches('input[data-ing]')) {
+      const r = byId(state.currentId);
+      if (!r) return;
+      const on = toggleProgress(r.id, 'ing', +t.dataset.ing);
+      t.closest('.ing').classList.toggle('is-done', on);
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Start
+
+  const hash = (location.hash || '').slice(1);
+  if (hash === 'add') state.view = 'edit';
+  else if (hash) state.pendingHash = hash;
+
+  render();
+  store.init();
+})();
+</script>
