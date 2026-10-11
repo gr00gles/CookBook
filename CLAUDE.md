@@ -1,13 +1,14 @@
 # CookBook
 
-A recipe box for recipes the user gets from Claude. The app is one HTML page (`cookbook/index.html`) plus a parser (`cookbook/parser.js`), published as a claude.ai artifact:
+An iPhone recipe box for recipes the user gets from Claude. Three parts:
 
-- Artifact: https://claude.ai/artifact/S75x6CjTbHvYXz25scpRn5
-- Capabilities: `db` with rule `{path: "", read: "view", write: "admin"}`, and `user`. Only the owner and editors change recipes; people the cookbook is shared with can read them.
+- `ios/`: SwiftUI app, iOS 17+, Swift 5 language mode. `ios/project.yml` (XcodeGen) is the source of truth. The iOS CI workflow regenerates `ios/CookBook.xcodeproj` and `ios/CookBook/Info.plist` and commits them back on push, so pull before pushing again.
+- `server/`: Cloudflare Worker with one Durable Object per inbox. It serves the app's HTTP API and the MCP connector (`/mcp/<inboxId>.<secret>`, tool `save_recipe`). Logic lives in `server/src/core.js` (no Cloudflare imports, so it's testable under Node); `server/src/index.js` is the thin Worker and Durable Object wrapper.
+- `cookbook/parser.js` + `cookbook/bridge.js`: the recipe parser and amount scaler. The iOS app runs both in JavaScriptCore (`ParserBridge.swift`), so parser changes reach the app with no Swift changes. `cookbook/index.html` is an older web version (claude.ai artifact https://claude.ai/artifact/S75x6CjTbHvYXz25scpRn5) with its own storage.
 
-## Writing recipes for this user
+## The user's recipe format
 
-The user always wants **every ingredient amount written into the directions**, not only in the ingredient list ("Add 2 tbsp olive oil", never "add the olive oil"). Use this shape so the app imports it cleanly:
+The user always wants **every ingredient amount written into the directions**, not only in the ingredient list ("Add 2 tbsp olive oil", never "add the olive oil"). When writing recipes, use:
 
 ```
 # Recipe Name
@@ -30,33 +31,17 @@ Serves: 4 | Prep: 15 min | Cook: 30 min
 - Tips, swaps, storage.
 ```
 
-## Adding a recipe to the app directly
+If the CookBook connector is available in a conversation, its `save_recipe` tool takes the same content as fields (`title`, `description`, `servings`, `prep_time`, `cook_time`, `total_time`, `ingredients` and `steps` as `[{group?, items}]`, `notes`, `tags`).
 
-When the user asks to add a recipe to their cookbook, write it to the artifact's database with the `ArtifactData` tool:
+## Checks
 
-1. Save the recipe as Markdown in the scratchpad, then build the document:
-   `node scripts/recipe-to-doc.js recipe.md --tags dinner,chicken > recipe.json`. It prints the doc id to use.
-2. `ArtifactData` `set` with `url` = the artifact above, `collection: "recipes"`, that `doc_id` and `file_path: recipe.json`.
+- `npm test` at the root runs the parser tests and the bridge tests. The bridge tests run the scripts in a bare `vm` context, the way JavaScriptCore does.
+- `cd server && npm test` runs the server tests with an in-memory Durable Object stand-in. `npx wrangler@4 dev` runs the real Workers runtime locally.
+- iOS can't be built on Linux. Push and read the **iOS app** workflow (macos-15: XcodeGen, `xcodebuild test` on a simulator, unsigned device build).
 
-Document shape (collection `recipes`, one document per recipe):
+## Gotchas
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `title` | string | |
-| `description` | string | lines joined with `\n` |
-| `servings`, `prepTime`, `cookTime`, `totalTime` | string | raw text, e.g. `"4"`, `"12 cookies"`, `"15 min"`; servings' first number drives scaling |
-| `ingredients`, `steps`, `notes` | `[{title, items: string[]}]` | `title` is `""` for an ungrouped list; items keep inline `**bold**`/`*italic*`; a step's continuation lines are joined with `\n` |
-| `tags` | string[] | lowercase |
-| `favorite` | boolean | |
-| `myNotes` | string | the user's own notes; never overwrite |
-| `source` | string | the text the recipe was imported from; shown when editing |
-| `createdAt`, `updatedAt` | number | ms since epoch |
-
-Changing an existing recipe: read it first and pin the write with `if_version`. Don't touch `myNotes` or `favorite` unless asked.
-
-## Development
-
-- `npm test` runs the parser tests (Node 18+, no dependencies).
-- `cookbook/index.html` is an artifact page fragment: no `<!doctype>`, `<html>`, `<head>` or `<body>`. The platform adds them when publishing.
-- Republish: `Artifact` publish with `file_path: cookbook/index.html`, `url` = the artifact above, `files: {"parser.js": "cookbook/parser.js"}`. Leave `capabilities` out so the stored ones carry over.
-- The parser avoids regex lookbehind so it runs on older iOS Safari. Keep `\u` escapes as escapes; raw U+2028/U+2029 inside a regex literal breaks the script.
+- Keep `parser.js` free of regex lookbehind and ES modules. It must run as a plain script in JavaScriptCore and older Safari.
+- Keep `\u` escapes as escapes in JS source; a raw U+2028/U+2029 inside a regex literal breaks the script.
+- `parser.js` output shape (`title, description, servings, prepTime, cookTime, totalTime, ingredients, steps, notes`, with groups as `{title, items}`) is shared by the web app, the server's stored recipes and the Swift `RecipeContent` model. Change all of them together.
+- `cookbook/index.html` is an artifact page fragment (no `<html>`/`<head>`/`<body>`). Republish with the Artifact tool: `file_path: cookbook/index.html`, `url` = the artifact above, `files: {"parser.js": "cookbook/parser.js"}`.

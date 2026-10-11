@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+
+# Cloudflare local dev state
+server/.wrangler/
+server/.dev.vars

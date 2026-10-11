@@ -563,6 +563,44 @@
     return splitAmounts(text, opts).map((p) => p.text).join('');
   }
 
+  /* Splits one line into styled pieces for native rendering: inline **bold** and
+   * *italic* Markdown, plus amounts when `opts` is given.
+   * Returns [{text, bold?, italic?, qty?: {original, scaled, changed}}]. */
+  function inlinePieces(text, opts) {
+    const src = String(text || '')
+      .replace(/\[([^\]]+)\]\((?:https?:)[^)\s]+\)/g, '$1')
+      .replace(/`([^`]+)`/g, '$1');
+    const runs = [];
+    const re = /\*\*(.+?)\*\*|__(.+?)__|(^|[^\w*])\*(?!\s)(.+?)\*(?!\w)/g;
+    let at = 0;
+    let m;
+    while ((m = re.exec(src))) {
+      let start = m.index;
+      let inner;
+      let style;
+      if (m[1] != null) { inner = m[1]; style = 'bold'; }
+      else if (m[2] != null) { inner = m[2]; style = 'bold'; }
+      else { start += m[3].length; inner = m[4]; style = 'italic'; }
+      if (start > at) runs.push({ text: src.slice(at, start) });
+      runs.push({ text: inner, [style]: true });
+      at = re.lastIndex;
+    }
+    if (at < src.length) runs.push({ text: src.slice(at) });
+
+    const pieces = [];
+    for (const run of runs) {
+      const parts = opts ? splitAmounts(run.text, opts) : [{ text: run.text }];
+      for (const p of parts) {
+        const piece = { text: p.text };
+        if (run.bold) piece.bold = true;
+        if (run.italic) piece.italic = true;
+        if (p.qty) piece.qty = p.qty;
+        pieces.push(piece);
+      }
+    }
+    return pieces;
+  }
+
   function servingsNumber(servings) {
     const m = String(servings || '').match(/\d+(?:\.\d+)?/);
     return m ? parseFloat(m[0]) : null;
@@ -579,7 +617,7 @@
 
   return {
     parseRecipe, checkRecipe, toMarkdown, countItems,
-    findQuantities, splitAmounts, scaleText, scaleQuantity, formatNumber, parseNum,
+    findQuantities, splitAmounts, scaleText, scaleQuantity, formatNumber, parseNum, inlinePieces,
     ingredientWords, servingsNumber, slugify, stripInline,
   };
 });

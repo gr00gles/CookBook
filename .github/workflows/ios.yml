@@ -1,0 +1,80 @@
+name: iOS app
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - "cookbook/parser.js"
+      - "cookbook/bridge.js"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - "cookbook/parser.js"
+      - "cookbook/bridge.js"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Pick an iPhone simulator
+        id: sim
+        run: |
+          xcodebuild -version
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          for runtime in sorted(devices, reverse=True):
+              if "iOS" not in runtime:
+                  continue
+              for d in devices[runtime]:
+                  if d["name"].startswith("iPhone"):
+                      print(d["udid"]); sys.exit()
+          ')
+          echo "Using simulator $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build and run tests
+        working-directory: ios
+        run: |
+          xcodebuild test \
+            -project CookBook.xcodeproj -scheme CookBook \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            CODE_SIGNING_ALLOWED=NO -quiet
+
+      - name: Build for a real iPhone (unsigned)
+        working-directory: ios
+        run: |
+          xcodebuild build \
+            -project CookBook.xcodeproj -scheme CookBook \
+            -destination "generic/platform=iOS" \
+            CODE_SIGNING_ALLOWED=NO -quiet
+
+      # Keep the generated project in the repo so it opens in Xcode without XcodeGen.
+      - name: Commit the regenerated Xcode project
+        if: github.event_name == 'push'
+        run: |
+          git add ios/CookBook.xcodeproj ios/CookBook/Info.plist
+          if git diff --cached --quiet; then
+            echo "Xcode project is up to date."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Regenerate Xcode project from ios/project.yml"
+            git push
+          fi

@@ -1,0 +1,11 @@
+{
+  "name": "cookbook-server",
+  "private": true,
+  "type": "module",
+  "description": "Receives recipes from Claude and holds them until each person's CookBook app collects them.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "dev": "npx wrangler@4 dev",
+    "deploy": "npx wrangler@4 deploy"
+  }
+}
