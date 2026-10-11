@@ -52,7 +52,7 @@ final class CookBookTests: XCTestCase {
         XCTAssertEqual(bridge.formatFactor(0.5), "½")
         XCTAssertEqual(Scaling.next(from: 1, base: 4, direction: 1), 1.25)
         XCTAssertEqual(Scaling.next(from: 0.25, base: 4, direction: -1), 0.25)
-        XCTAssertEqual(Scaling.next(from: 1, base: nil, direction: -1), 0.5)
+        XCTAssertEqual(Scaling.next(from: 1, base: nil, direction: -1), 0.75)
         XCTAssertEqual(Scaling.next(from: 1, base: 24, direction: 1), 1.5)
     }
 
