@@ -19,8 +19,14 @@ final class CookBookTests: XCTestCase {
     2. Add the remaining 2 tbsp butter. Bake at 400°F for 10 minutes.
     """
 
+    func testParserLoadsWithoutErrors() {
+        _ = ParserBridge.shared.parse("# Toast")
+        XCTAssertNil(ParserBridge.shared.lastError)
+    }
+
     func testParsesARecipeInJavaScriptCore() {
         let result = ParserBridge.shared.parse(sample)
+        XCTAssertNil(ParserBridge.shared.lastError)
         XCTAssertEqual(result.recipe.title, "Garlic Butter Shrimp")
         XCTAssertEqual(result.recipe.servings, "4")
         XCTAssertEqual(result.recipe.cookTime, "15 min")
@@ -30,14 +36,17 @@ final class CookBookTests: XCTestCase {
         XCTAssertEqual(result.problems, [])
     }
 
-    func testScalesAmountsInTheDirections() {
+    func testScalesAmountsInTheDirections() throws {
         let recipe = ParserBridge.shared.parse(sample).recipe
-        let pieces = ParserBridge.shared.pieces(recipe.steps[0].items[0], style: .step, factor: 2, ingredients: recipe.ingredients)
+        let steps = try XCTUnwrap(recipe.steps.first?.items, "No steps parsed. JavaScript error: \(ParserBridge.shared.lastError ?? "none")")
+        XCTAssertEqual(steps.count, 2)
+        guard steps.count == 2 else { return }
+        let pieces = ParserBridge.shared.pieces(steps[0], style: .step, factor: 2, ingredients: recipe.ingredients)
         XCTAssertEqual(pieces.first?.text, "Sear:")
         XCTAssertEqual(pieces.first?.bold, true)
         XCTAssertEqual(pieces.filter { $0.qty != nil }.map(\.text), ["4 tbsp", "2 lb"])
 
-        let styled = ParserBridge.shared.styled(recipe.steps[1].items[0], style: .step, factor: 2, ingredients: recipe.ingredients)
+        let styled = ParserBridge.shared.styled(steps[1], style: .step, factor: 2, ingredients: recipe.ingredients)
         let text = String(styled.characters)
         XCTAssertTrue(text.contains("4 tbsp butter"))
         XCTAssertTrue(text.contains("400°F for 10 minutes"))

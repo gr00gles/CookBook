@@ -56,10 +56,20 @@ jobs:
       - name: Build and run tests
         working-directory: ios
         run: |
+          set +e
           xcodebuild test \
             -project CookBook.xcodeproj -scheme CookBook \
             -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO -quiet
+          status=$?
+          if [ $status -ne 0 ] && [ -d TestResults.xcresult ]; then
+            echo "::group::Test failures"
+            xcrun xcresulttool get test-results summary --path TestResults.xcresult --format json \
+              | python3 -c 'import json,sys; [print(f.get("testName"), "->", f.get("failureText")) for f in json.load(sys.stdin).get("testFailures", [])]'
+            echo "::endgroup::"
+          fi
+          exit $status
 
       - name: Build for a real iPhone (unsigned)
         working-directory: ios

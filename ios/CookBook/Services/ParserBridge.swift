@@ -40,12 +40,23 @@ final class ParserBridge {
 
     private let context: JSContext
     private let bridge: JSValue
+    private let errors: ErrorLog
     private var pieceCache: [String: [TextPiece]] = [:]
+
+    /// The last JavaScript error, if any. Shown by the tests when something breaks.
+    var lastError: String? { errors.last }
+
+    private final class ErrorLog {
+        var last: String?
+    }
 
     private init() {
         guard let context = JSContext() else { fatalError("JavaScriptCore is unavailable") }
+        let errors = ErrorLog()
         context.exceptionHandler = { _, exception in
-            print("CookBook parser error:", exception?.toString() ?? "unknown")
+            let message = exception?.toString() ?? "unknown error"
+            errors.last = message
+            print("CookBook parser error:", message)
         }
         let bundle = Bundle(for: ParserBridge.self)
         for name in ["parser", "bridge"] {
@@ -56,7 +67,11 @@ final class ParserBridge {
             context.evaluateScript(source, withSourceURL: url)
         }
         self.context = context
+        self.errors = errors
         self.bridge = context.objectForKeyedSubscript("CookBookBridge")
+        if !bridge.isObject {
+            errors.last = (errors.last.map { $0 + " / " } ?? "") + "CookBookBridge is not defined after loading the scripts"
+        }
     }
 
     // MARK: Calls
